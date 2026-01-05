@@ -9,6 +9,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchContacts, setSelectedIds, Contact } from "../slices/crmSlice";
 import { AppDispatch, RootState } from "../store";
+import TableActionsHeader from "../components/TableActionsHeader";
+import SearchTable from "../components/SearchTable";
 
 export default function CRM() {
   const dispatch = useDispatch<AppDispatch>();
@@ -71,6 +73,12 @@ export default function CRM() {
 
   return (
     <div className="border border-slate-400 rounded-lg min-h-screen uppercase text-sm">
+      <div>
+        <TableActionsHeader />
+      </div>
+      <div>
+        <SearchTable />
+      </div>
       <table className="w-full border-collapse">
         <thead className="border-b border-slate-400">
           {table.getHeaderGroups().map((hg) => (
