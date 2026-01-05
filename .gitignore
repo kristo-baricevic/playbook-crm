@@ -35,4 +35,5 @@ coverage/
 *.log
 
 .next/*
-backend/django/.venv/
+backend/django/.venv/*
+frontend/.next/*
