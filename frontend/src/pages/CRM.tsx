@@ -70,11 +70,11 @@ export default function CRM() {
   });
 
   return (
-    <div>
+    <div className="bg-blue-500 text-red-400">
       <table>
         <thead>
           {table.getHeaderGroups().map((hg) => (
-            <tr key={hg.id}>
+            <tr className="bg-blue-400" key={hg.id}>
               {hg.headers.map((h) => (
                 <th key={h.id}>
                   {h.isPlaceholder
