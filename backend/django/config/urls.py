@@ -14,5 +14,6 @@ urlpatterns = [
 
     path("api/", include(router.urls)),
     path("api/generate/", GenerateView.as_view()),
-    path("api/analytics/charts/", ChartView.as_view()),
+    path("api/analytics/", include("apps.analytics.urls")),
+    
 ]

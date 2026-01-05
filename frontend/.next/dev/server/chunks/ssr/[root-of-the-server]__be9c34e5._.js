@@ -192,8 +192,9 @@ const analyticsSlice = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_
             reducer (state, action) {
                 const cfg = action.payload;
                 state.chartConfigs[cfg.id] = cfg;
-                const dash = state.dashboards[state.activeDashboardId];
-                dash.chartIds.push(cfg.id);
+                const dashId = state.activeDashboardId;
+                if (!dashId) return;
+                state.dashboards[dashId].chartIds.push(cfg.id);
             },
             prepare (chartType, metric, days = 30) {
                 return {
@@ -219,8 +220,7 @@ const analyticsSlice = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_
             state.activeDashboardId = action.payload;
         },
         updateChartConfig (state, action) {
-            const { id, updates } = action.payload;
-            Object.assign(state.chartConfigs[id], updates);
+            Object.assign(state.chartConfigs[action.payload.id], action.payload.updates);
         }
     },
     extraReducers: (builder)=>{

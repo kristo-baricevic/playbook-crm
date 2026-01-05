@@ -6,6 +6,7 @@ import {
   nanoid,
 } from "@reduxjs/toolkit";
 import { apiGet, apiPost } from "../api/client";
+import { fetchChartData } from "../api/analytics";
 
 export type ChartType = "pie" | "bar" | "line" | "combo";
 export type MetricType = "emails_sent" | "industry_breakdown" | "response_rate";
@@ -23,7 +24,7 @@ export type Dashboard = {
   chartIds: string[];
 };
 
-type ChartState = {
+type AnalyticsState = {
   charts: Record<string, unknown>;
   chartConfigs: Record<string, ChartConfig>;
   dashboards: Record<string, Dashboard>;
@@ -31,7 +32,7 @@ type ChartState = {
   loading: boolean;
 };
 
-const initialState: ChartState = {
+const initialState: AnalyticsState = {
   charts: {},
   chartConfigs: {},
   dashboards: {},
@@ -42,9 +43,8 @@ const initialState: ChartState = {
 export const fetchChart = createAsyncThunk(
   "analytics/fetchChart",
   async (params: { chartId: string; metric: MetricType; days: number }) => {
-    const data = await apiGet(
-      `/api/analytics/charts/?type=${params.metric}&days=${params.days}`
-    );
+    const { metric, days } = params;
+    const data = await fetchChartData(metric, days);
     return { chartId: params.chartId, data };
   }
 );
@@ -66,15 +66,12 @@ const analyticsSlice = createSlice({
         const cfg = action.payload;
         state.chartConfigs[cfg.id] = cfg;
 
-        const dash = state.dashboards[state.activeDashboardId!];
-        dash.chartIds.push(cfg.id);
-      },
+        const dashId = state.activeDashboardId;
+        if (!dashId) return;
 
-      prepare(
-        chartType: ChartType,
-        metric: MetricType,
-        days: number = 30
-      ): { payload: ChartConfig } {
+        state.dashboards[dashId].chartIds.push(cfg.id);
+      },
+      prepare(chartType: ChartType, metric: MetricType, days = 30) {
         return {
           payload: {
             id: nanoid(),
@@ -86,23 +83,24 @@ const analyticsSlice = createSlice({
       },
     },
 
-    createDashboard(state, action) {
+    createDashboard(state, action: PayloadAction<string>) {
       const id = nanoid();
-      state.dashboards[id] = {
-        id,
-        name: action.payload,
-        chartIds: [],
-      };
+      state.dashboards[id] = { id, name: action.payload, chartIds: [] };
       state.activeDashboardId = id;
     },
 
-    setActiveDashboard(state, action) {
+    setActiveDashboard(state, action: PayloadAction<string>) {
       state.activeDashboardId = action.payload;
     },
 
-    updateChartConfig(state, action) {
-      const { id, updates } = action.payload;
-      Object.assign(state.chartConfigs[id], updates);
+    updateChartConfig(
+      state,
+      action: PayloadAction<{ id: string; updates: Partial<ChartConfig> }>
+    ) {
+      Object.assign(
+        state.chartConfigs[action.payload.id],
+        action.payload.updates
+      );
     },
   },
 
