@@ -3,10 +3,10 @@ import CRM from "./pages/CRM";
 
 export default function App() {
   return (
-    <div>
-      <>
+    <div className="tw-h-full">
+      <div className="bg-blue-300">
         <CRM />
-      </>
+      </div>
     </div>
   );
 }
