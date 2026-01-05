@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-export default function SearchTable() {
+export default function TableSearch() {
   const [searchOpen, setSearchOpen] = useState(false);
   return (
     <div className="flex flex-row gap-2">
