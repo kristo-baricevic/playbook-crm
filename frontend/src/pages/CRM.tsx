@@ -70,26 +70,35 @@ export default function CRM() {
   });
 
   return (
-    <div className="bg-blue-500 text-red-400">
-      <table>
-        <thead>
+    <div className="border border-slate-400 rounded-lg min-h-screen uppercase text-sm">
+      <table className="w-full border-collapse">
+        <thead className="border-b border-slate-400">
           {table.getHeaderGroups().map((hg) => (
-            <tr className="bg-blue-400" key={hg.id}>
+            <tr key={hg.id}>
               {hg.headers.map((h) => (
-                <th key={h.id}>
+                <th
+                  key={h.id}
+                  className="px-4 py-3 text-left font-medium text-slate-700"
+                >
                   {h.isPlaceholder
                     ? null
-                    : (h.column.columnDef.header as string)}
+                    : (h.column.columnDef.header as string)}{" "}
                 </th>
               ))}
             </tr>
           ))}
         </thead>
+
         <tbody>
           {table.getRowModel().rows.map((row) => (
-            <tr key={row.id}>
+            <tr
+              key={row.id}
+              className="border-b border-slate-300 last:border-b-0"
+            >
               {row.getVisibleCells().map((cell) => (
-                <td key={cell.id}>{cell.getValue() as string}</td>
+                <td key={cell.id} className="px-4 py-3 text-slate-800">
+                  {cell.getValue() as string}
+                </td>
               ))}
             </tr>
           ))}
