@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { PayloadAction, createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { apiGet } from "../api/client";
 
 export type Contact = {
@@ -17,11 +17,13 @@ export type Contact = {
 type CRMState = {
   contacts: Contact[];
   loading: boolean;
+  selectedIds: number[];
 };
 
 const initialState: CRMState = {
   contacts: [],
   loading: false,
+  selectedIds: [],
 };
 
 export const fetchContacts = createAsyncThunk("crm/fetchContacts", async () => {
@@ -32,7 +34,11 @@ export const fetchContacts = createAsyncThunk("crm/fetchContacts", async () => {
 const crmSlice = createSlice({
   name: "crm",
   initialState,
-  reducers: {},
+  reducers: {
+    setSelectedIds(state, action: PayloadAction<number[]>) {
+      state.selectedIds = action.payload;
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchContacts.pending, (state) => {
@@ -45,4 +51,5 @@ const crmSlice = createSlice({
   },
 });
 
+export const { setSelectedIds } = crmSlice.actions;
 export default crmSlice.reducer;
