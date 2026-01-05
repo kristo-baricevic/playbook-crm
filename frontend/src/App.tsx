@@ -1,5 +1,5 @@
 import React from "react";
-import CRM from "./pages/CRM";
+import CRM from "./app/pages/CRM";
 
 export default function App() {
   return (

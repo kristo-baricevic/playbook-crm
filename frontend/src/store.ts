@@ -1,8 +1,8 @@
 import { configureStore } from "@reduxjs/toolkit"
-import crmReducer from "./slices/crmSlice"
-import playbooksReducer from "./slices/playbooksSlice"
-import generationReducer from "./slices/generationSlice"
-import analyticsReducer from "./slices/analyticsSlice"
+import crmReducer from "./app/slices/crmSlice"
+import playbooksReducer from "./app/slices/playbooksSlice"
+import generationReducer from "./app/slices/generationSlice"
+import analyticsReducer from "./app/slices/analyticsSlice"
 
 export const store = configureStore({
   reducer: {
