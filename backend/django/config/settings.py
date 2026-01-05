@@ -71,3 +71,4 @@ STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "core.User"
 CORS_ALLOW_ALL_ORIGINS = True
+LLM_API_URL = "http://localhost:8001/generate"

@@ -11,9 +11,9 @@ router.register("contacts", ContactViewSet, basename="contacts")
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-
     path("api/", include(router.urls)),
     path("api/generate/", GenerateView.as_view()),
     path("api/analytics/", include("apps.analytics.urls")),
-    
+    path("api/", include("apps.playbooks.urls")),
 ]
+
