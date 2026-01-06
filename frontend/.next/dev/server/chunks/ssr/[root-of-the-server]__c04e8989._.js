@@ -160,6 +160,8 @@ function fetchChartData(metric, days) {
 "use strict";
 
 __turbopack_context__.s([
+    "addChart",
+    ()=>addChart,
     "createChart",
     ()=>createChart,
     "createDashboard",
@@ -168,8 +170,16 @@ __turbopack_context__.s([
     ()=>__TURBOPACK__default__export__,
     "fetchChart",
     ()=>fetchChart,
+    "removeChart",
+    ()=>removeChart,
     "saveDashboard",
     ()=>saveDashboard,
+    "selectChartDataById",
+    ()=>selectChartDataById,
+    "selectChartLoadingById",
+    ()=>selectChartLoadingById,
+    "selectCharts",
+    ()=>selectCharts,
     "setActiveDashboard",
     ()=>setActiveDashboard,
     "updateChartConfig",
@@ -187,8 +197,11 @@ const initialState = {
     chartConfigs: {},
     dashboards: {},
     activeDashboardId: null,
-    loading: false
+    loading: false,
+    chartLoadingById: {},
+    createInFlightByKey: {}
 };
+const chartKey = (p)=>`${p.chartType}:${p.metric}:${p.days}`;
 const fetchChart = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$reduxjs$2f$toolkit$2f$dist$2f$redux$2d$toolkit$2e$modern$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$locals$3e$__["createAsyncThunk"])("analytics/fetchChart", async (params)=>{
     const { metric, days } = params;
     const data = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$app$2f$api$2f$analytics$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["fetchChartData"])(metric, days);
@@ -196,6 +209,24 @@ const fetchChart = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modu
         chartId: params.chartId,
         data
     };
+});
+const addChart = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$reduxjs$2f$toolkit$2f$dist$2f$redux$2d$toolkit$2e$modern$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$locals$3e$__["createAsyncThunk"])("analytics/addChart", async (params, { dispatch })=>{
+    const created = dispatch(createChart(params.chartType, params.metric, params.days));
+    const chartId = created.payload.id;
+    await dispatch(fetchChart({
+        chartId,
+        metric: params.metric,
+        days: params.days
+    }));
+    return {
+        chartId
+    };
+}, {
+    condition: (params, { getState })=>{
+        const s = getState();
+        const key = chartKey(params);
+        return !s.analytics.createInFlightByKey[key];
+    }
 });
 const saveDashboard = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$reduxjs$2f$toolkit$2f$dist$2f$redux$2d$toolkit$2e$modern$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$locals$3e$__["createAsyncThunk"])("analytics/saveDashboard", async (dashboard)=>{
     await (0, __TURBOPACK__imported__module__$5b$project$5d2f$app$2f$api$2f$client$2e$ts__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["apiPost"])("/api/analytics/dashboards/", dashboard);
@@ -207,11 +238,23 @@ const analyticsSlice = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_
     reducers: {
         createChart: {
             reducer (state, action) {
-                const cfg = action.payload;
-                state.chartConfigs[cfg.id] = cfg;
-                const dashId = state.activeDashboardId;
-                if (!dashId) return;
-                state.dashboards[dashId].chartIds.push(cfg.id);
+                const chartConfig = action.payload;
+                console.log("chart in create ", chartConfig);
+                // Prevent duplicate insertions
+                if (state.chartConfigs[chartConfig.id]) return;
+                state.chartConfigs[chartConfig.id] = chartConfig;
+                let dashId = state.activeDashboardId;
+                if (!dashId) {
+                    dashId = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$reduxjs$2f$toolkit$2f$dist$2f$redux$2d$toolkit$2e$modern$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$locals$3e$__["nanoid"])();
+                    state.dashboards[dashId] = {
+                        id: dashId,
+                        name: "My Dashboard",
+                        chartIds: []
+                    };
+                    state.activeDashboardId = dashId;
+                }
+                const dash = state.dashboards[dashId];
+                if (!dash.chartIds.includes(chartConfig.id)) dash.chartIds.push(chartConfig.id);
             },
             prepare (chartType, metric, days = 30) {
                 return {
@@ -223,6 +266,15 @@ const analyticsSlice = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_
                     }
                 };
             }
+        },
+        removeChart (state, action) {
+            const { chartId } = action.payload;
+            delete state.chartConfigs[chartId];
+            delete state.charts[chartId];
+            delete state.chartLoadingById[chartId];
+            Object.values(state.dashboards).forEach((d)=>{
+                d.chartIds = d.chartIds.filter((id)=>id !== chartId);
+            });
         },
         createDashboard (state, action) {
             const id = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f40$reduxjs$2f$toolkit$2f$dist$2f$redux$2d$toolkit$2e$modern$2e$mjs__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$locals$3e$__["nanoid"])();
@@ -241,15 +293,35 @@ const analyticsSlice = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_
         }
     },
     extraReducers: (builder)=>{
-        builder.addCase(fetchChart.pending, (state)=>{
+        builder.addCase(fetchChart.pending, (state, action)=>{
             state.loading = true;
+            state.chartLoadingById[action.meta.arg.chartId] = true;
         }).addCase(fetchChart.fulfilled, (state, action)=>{
             state.charts[action.payload.chartId] = action.payload.data;
             state.loading = false;
+            state.chartLoadingById[action.payload.chartId] = false;
+        }).addCase(fetchChart.rejected, (state, action)=>{
+            state.loading = false;
+            state.chartLoadingById[action.meta.arg.chartId] = false;
+        }).addCase(addChart.pending, (state, action)=>{
+            state.createInFlightByKey[chartKey(action.meta.arg)] = true;
+        }).addCase(addChart.fulfilled, (state, action)=>{
+            state.createInFlightByKey[chartKey(action.meta.arg)] = false;
+        }).addCase(addChart.rejected, (state, action)=>{
+            state.createInFlightByKey[chartKey(action.meta.arg)] = false;
         });
     }
 });
-const { createChart, createDashboard, setActiveDashboard, updateChartConfig } = analyticsSlice.actions;
+const { createChart, removeChart, createDashboard, setActiveDashboard, updateChartConfig } = analyticsSlice.actions;
+const selectChartDataById = (s)=>s.analytics.charts;
+const selectChartLoadingById = (s)=>s.analytics.chartLoadingById;
+const selectCharts = (s)=>{
+    const { activeDashboardId, dashboards, chartConfigs } = s.analytics;
+    if (activeDashboardId && dashboards[activeDashboardId]) {
+        return dashboards[activeDashboardId].chartIds.map((id)=>chartConfigs[id]).filter(Boolean);
+    }
+    return Object.values(chartConfigs);
+};
 const __TURBOPACK__default__export__ = analyticsSlice.reducer;
 }),
 "[project]/app/store.ts [app-ssr] (ecmascript)", ((__turbopack_context__) => {
